@@ -1,19 +1,16 @@
-#Reactivation-Extinction MRI
+# Reactivation-Extinction MRI
 **Project ID: ReactExtMRI**
 
 GitHub Author: Emma Biggs
 
-##Introduction & data collection procedures
+## Introduction & data collection procedures
 
-Bla bla bla
-
-fMRIprep & CONN
-Ledalab
+[To be updated]
 
 - Further study details at OSF [link]
 - Raw (individual-level) data available upon request from the author
 
-##Data preparation
+## Data preparation
 
 The data preparation pipeline includes the following steps:
 
@@ -22,7 +19,7 @@ The data preparation pipeline includes the following steps:
 - **Differential Scoring:** Calculation of CS- adjusted responses for SCR and gPPI.
 - **Data Tidying:** Transformations to facilitate statistical modeling.
 
-##Analysis
+## Analysis
 
 The analysis is divided into two primary research questions:
 
@@ -38,9 +35,10 @@ The analysis is divided into two primary research questions:
  - Inference: P-values and Benjamini-Hochberg FDR adjusted P-values are calculated.
  - Visualization: Results are summarized using Forest Plots categorized by anatomical circuits.
 
-##The github repo:
+## The github repo:
 
-###Layout
+### Layout
+
 `
 ├── data/
 │   ├── raw/          # Original (study-level) SCR, Ratings, and gPPI CSVs
@@ -54,7 +52,7 @@ The analysis is divided into two primary research questions:
 └── README.md
 `
 
-###Requirements & Quick Start
+### Requirements & Quick Start
 
 This project was developed using **R version 4.3.0.**
 
@@ -66,19 +64,20 @@ To replicate the analysis, you will need the following R packages installed:
 - Reporting & Visualization: DT, kableExtra, tidytext, RColorBrewer
 
 You can install all **dependencies** at once by running:
+
 `install.packages(c("tidyverse", "bain", "emmeans", "broom", "DT", "kableExtra", "tidytext", "RColorBrewer"))`
 
 To **Quick Start** this project:
 
-- 1) Clone the repository:
+1) Clone the repository:
 
 	`git clone https://github.com/emma-biggs/ReactExtMRI.git`
 
-- 2) Open the .Rproj file in RStudio to ensure the working directory is set correctly to the project root.
+2) Open the .Rproj file in RStudio to ensure the working directory is set correctly to the project root.
 
-- 3) Check the raw data files (Ratings, SCR, and gPPI) are located in the data/raw folder
+3) Check the raw data files (Ratings, SCR, and gPPI) are located in the data/raw folder
 
-- 4) Run the notebooks/Analysis.Rmd file, use Knit to create the .html output file.
+4) Run the notebooks/Analysis.Rmd file, use Knit to create the .html output file.
 
 
 

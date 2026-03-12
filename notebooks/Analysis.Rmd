@@ -584,7 +584,7 @@ winning_results <- bain_summary_long %>%
     )
 
 # Plot the Heatmap
-ggplot(winning_results, aes(x = Phase, y = Label, fill = Hypothesis)) +
+plot_heatmap <- ggplot(winning_results, aes(x = Phase, y = Label, fill = Hypothesis)) +
   geom_tile(aes(alpha = PMPb), color = "white") +
   facet_grid(Category.x ~ ., scales = "free_y", space = "free_y") +
   scale_fill_brewer(palette = "Set2") +
@@ -594,6 +594,9 @@ ggplot(winning_results, aes(x = Phase, y = Label, fill = Hypothesis)) +
        fill = "Winning Model") +
   theme(axis.text.y = element_text(size = 8),
         strip.text.y = element_text(angle = 0, face = "bold", hjust = 0))
+
+# Save the heatmap
+ggsave("../output/figures/RQ1_BAIN_heatmap.png", plot_heatmap)
   
 
 ```
@@ -766,7 +769,7 @@ write_csv(master_data_cleaned,"../output/tables/RQ2_Linear_Models_Results.csv")
 
 RQ2_plots <- function(data_table, x_data, sig_flag, sig_color, title) {
   
-  ggplot(data_table, aes(x = x_data, y = reorder(Variable_name, x_data))) +
+  p <- ggplot(data_table, aes(x = x_data, y = reorder(Variable_name, x_data))) +
     
     geom_vline(xintercept = 0, linetype = "dotted", color = "gray50") +
     
@@ -791,6 +794,8 @@ RQ2_plots <- function(data_table, x_data, sig_flag, sig_color, title) {
       color = "p < .05"
     )
   
+  return(p)
+  
 }
 
 
@@ -801,7 +806,11 @@ rq2_summary_table <- rq2_summary_table %>%
     is_sig_me = (MainEffect_p < 0.05)
   )
 
-RQ2_plots(rq2_summary_table, rq2_summary_table$Interaction_B, rq2_summary_table$is_sig_int, "red", "CS Type X gPPI interaction effects on SCR")
-RQ2_plots(rq2_summary_table, rq2_summary_table$MainEffect_B, rq2_summary_table$is_sig_me, "blue", "Main effect of gPPI on SCR")
+plot_forest_int <- RQ2_plots(rq2_summary_table, rq2_summary_table$Interaction_B, rq2_summary_table$is_sig_int, "red", "CS Type X gPPI interaction effects on SCR")
+plot_forest_me <- RQ2_plots(rq2_summary_table, rq2_summary_table$MainEffect_B, rq2_summary_table$is_sig_me, "blue", "Main effect of gPPI on SCR")
+
+# Save the forest plots
+ggsave("../output/figures/RQ2_Forestplot_interaction.png", plot_heatmap)
+ggsave("../output/figures/RQ2_Forestplot_maineffect.png", plot_heatmap)
 
 ```
