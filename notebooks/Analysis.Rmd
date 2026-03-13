@@ -810,7 +810,9 @@ plot_forest_int <- RQ2_plots(rq2_summary_table, rq2_summary_table$Interaction_B,
 plot_forest_me <- RQ2_plots(rq2_summary_table, rq2_summary_table$MainEffect_B, rq2_summary_table$is_sig_me, "blue", "Main effect of gPPI on SCR")
 
 # Save the forest plots
+plot_forest_int
 ggsave("../output/figures/RQ2_Forestplot_interaction.png", plot_forest_int)
+plot_forest_me
 ggsave("../output/figures/RQ2_Forestplot_maineffect.png", plot_forest_me)
 
 ```
