@@ -29,6 +29,10 @@ The analysis is divided into two primary research questions:
 - Inference: Posterior Model Probabilities (PMPs) and Bayes Factors (BFs) are used to determine evidence for the experimental hypotheses vs. the null.
 - Visualization: A heatmap is produced showing the winning model over the variables tested.
 
+![Heatmap of Winning Models for RQ1](output/figures/RQ1_BAIN_heatmap.png)
+
+
+
 **RQ2:** *Do changes in effective connectivity relate to changes in SCR? Does this relationship differ between CS+R and CS+NR?*
 
  - Method: Linear interaction models (SCR ~ CS Type * gPPI).
