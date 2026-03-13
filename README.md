@@ -32,12 +32,14 @@ The analysis is divided into two primary research questions:
 ![Heatmap of Winning Models for RQ1](output/figures/RQ1_BAIN_heatmap.png)
 
 
-
 **RQ2:** *Do changes in effective connectivity relate to changes in SCR? Does this relationship differ between CS+R and CS+NR?*
 
  - Method: Linear interaction models (SCR ~ CS Type * gPPI).
  - Inference: P-values and Benjamini-Hochberg FDR adjusted P-values are calculated.
  - Visualization: Results are summarized using Forest Plots categorized by anatomical circuits.
+
+![Forestplot of Main Effects for RQ2](output/figures/RQ2_Forestplot_maineffect.png)
+
 
 ## The github repo:
 
