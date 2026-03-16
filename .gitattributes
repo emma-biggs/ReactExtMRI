@@ -1,0 +1,6 @@
+# Treat Rmd files as R language for the statistics bar
+*.Rmd linguist-language=R
+
+# Ignore generated HTML files from the language statistics
+*.html linguist-vendored
+docs/* linguist-vendored
