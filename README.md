@@ -49,6 +49,7 @@ The analysis is divided into two primary research questions:
 ├── data/
 │   ├── raw/          # Original (study-level) SCR, Ratings, and gPPI CSVs
 │   └── processed/    # Cleaned master_data.csv
+├── experiment/		  # Psychopy scripts used for data collection
 ├── notebooks/
 │   └── Analysis.Rmd  # Analysis pipeline
 ├── output/
