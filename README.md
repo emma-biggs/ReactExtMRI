@@ -45,7 +45,7 @@ The analysis is divided into two primary research questions:
 
 ### Layout
 
-`
+```text
 ├── data/
 │   ├── raw/          # Original (study-level) SCR, Ratings, and gPPI CSVs
 │   └── processed/    # Cleaned master_data.csv
@@ -56,7 +56,7 @@ The analysis is divided into two primary research questions:
 │   └── tables/       # Statistic summary tables
 ├── src/			  # Matlab scripts for generating study-level .csv datafiles from individual-level files
 └── README.md
-`
+```
 
 ### Requirements & Quick Start
 
