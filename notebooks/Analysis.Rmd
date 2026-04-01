@@ -26,6 +26,8 @@ library(forcats)   # For re-ordering factors
 library(emmeans)   # For calculating slopes
 library(broom)     # For navigating stats tables
 library(stringr)   # For renaming strings in column names
+library(lme4)      # For mixed effects analysis
+library(lmerTest)  # For mixed effects analysis
 
 ```
 
@@ -607,60 +609,67 @@ Does connectivity strength relate to SCR?
 
 
 SCR and gPPI responses to CS- were subtracted from responses to CS+R and CS+NR. \n
-We then tested if gPPI responses for CS+R and CS+NR (CS- adjusted) could predict SCR (CS- adjusted) responses. \n
-The **main effect** results indicate if gPPI predicts SCR (irrespective of CS Type),\n
-the **interaction effect** results indicate if the relationship between gPPI and SCR differed for CS+R and CS+NR.
+We then tested if gPPI responses for CS+R (CS- adjusted) at EXT could predict CS+R SCR (CS- adjusted) responses at EXT-RE and REN. \n
 
 
 Conducted linear models of the form:
 
-SCR ~ gPPI * CS Type - 1
+`
+delta_SCR_EXT ~ delta_gPPI_extre + delta_gPPI_ren + 1
+`
 
-
-*FDR adjusted p-values calculated per phase (NB: No test survive FDR correction)*
 
 ```{r analysis_rq2}
 
-# ----------------------------
-# Create a function to run lm
-# ----------------------------
-run_analysis_rq2 <- function(var_name, phase_name, data) {
+# -------------------------------------
+# Create a function to run linear model
+# -------------------------------------
+run_analysis_rq2 <- function(pred_name, outcome_name, data) {
   
-  # Filter for phase
-  analysis_data <- data %>% 
-    filter(Phase == phase_name)
+  # Get EXT predictor data
+  ext_predictor_data <- data %>%
+    filter(Phase == "EXT") %>%
+    select(pID,
+           CS_Type,
+           gPPI_at_EXT = .data[[pred_name]]
+    )
   
-  # Fit the model
-  f       <- as.formula(paste("SCR_delta ~ 1 + CS_Type * ", var_name))
-  fit     <- lm(f, analysis_data)
-  s       <- summary(fit)
-  slopes  <- as.data.frame(emtrends(fit, ~ CS_Type, var = var_name))
+  # Filter for the outcome phases (EXT-RE and REN)
+  outcome_data <- data %>%
+    filter(Phase %in% c("EXT-RE", "REN")) %>%
+    select(pID,
+           CS_Type,
+           Phase,
+           y = .data[[outcome_name]]
+    )
   
-  # Get the interaction term p-value and beta from the model summary
-  int_p <- tidy(s) %>% 
-    filter(grepl(":", term)) %>% 
-    pull(p.value)
-  int_b <- tidy(s) %>% 
-    filter(grepl(":", term)) %>% 
-    pull(estimate)
+  # Join them into one dataframe
+  analysis_data <- left_join(outcome_data, ext_predictor_data, by = c("pID", "CS_Type"))
   
-  # Get the effect of gPPI on SCR from the model summary
-  main_effect <- as.data.frame(test(emtrends(fit, ~ 1, var = var_name)))
-
+  # Run the Mixed Model for SCR
+  model <- lmer(y ~ gPPI_at_EXT * Phase * CS_Type + (1 | pID), data = analysis_data)
+  
+  # Extract the slope coefficients
+  slopes <- as.data.frame(summary(emtrends(model, ~ Phase * CS_Type, var = "gPPI_at_EXT"), infer = c(TRUE, TRUE)))
+  
   # Extract results
   results_rq2 <- data.frame(
-    Variable = var_name,
-    Variable_name = conn_dict[str_remove(var_name, "_delta")],
-    Variable_category = cat_dict[str_remove(var_name, "_delta")],
-    Phase = phase_name,
-    MainEffect_B = main_effect[1,2],
-    MainEffect_p = main_effect[1,6],
-    Slope_CSpR = slopes[slopes$CS_Type == "R", 2], # The trend column
-    Slope_CSpNR = slopes[slopes$CS_Type == "NR", 2],
-    Interaction_B = int_b,
-    Interaction_p = int_p
+    Variable = pred_name,
+    Variable_name = conn_dict[str_remove(pred_name, "_delta")],
+    Variable_category = cat_dict[str_remove(pred_name, "_delta")]
   )
-
+  
+  # Slopes
+  for (p in c("EXT-RE","REN")) {
+    for (c in c("R", "NR")) {
+      results_name_b <- paste0(outcome_name, "_", p, "_", c, "_b")
+      results_name_p <- paste0(outcome_name, "_", p, "_", c, "_p")
+      results_rq2[[results_name_b]] <- slopes$gPPI_at_EXT.trend[slopes$Phase == p & slopes$CS_Type == c]
+      results_rq2[[results_name_p]] <- slopes$p.value[slopes$Phase == p & slopes$CS_Type == c]
+    }
+  }
+  
+  
   return(results_rq2)
 }
 
@@ -671,16 +680,18 @@ run_analysis_rq2 <- function(var_name, phase_name, data) {
 # Create a Wide dataframe to calculate responses minus CS-
 delta_analysis_data <- master_data_cleaned %>%
   # Select only the variables needed
-  select(pID, Phase, CS_Type, SCR, all_of(significant_conn_ids)) %>%
+  select(pID, Phase, CS_Type, Rating, SCR, all_of(significant_conn_ids)) %>%
   # Pivot so each CS_Type gets its own column for every measure
   pivot_wider(
     names_from = CS_Type,
-    values_from = c(SCR, all_of(significant_conn_ids))
+    values_from = c(SCR, Rating, all_of(significant_conn_ids))
   ) %>%
   # Calculate SCR Deltas (CSplus minus CSminus)
   mutate(
     SCR_delta_R  = SCR_CSpR - SCR_CSm,
-    SCR_delta_NR = SCR_CSpNR - SCR_CSm
+    SCR_delta_NR = SCR_CSpNR - SCR_CSm,
+    Rating_delta_R = Rating_CSpR - Rating_CSm,
+    Rating_delta_NR = Rating_CSpNR - Rating_CSm
   )
 
 # Calculate deltas for all significant connections
@@ -718,45 +729,35 @@ analysis_vars <- delta_analysis_data %>%
   colnames()
 
 # Loop through Phases and Variables
-all_rq2_results <- list()
+all_rq2_results_scr <- list()
+all_rq2_results_ratings <- list()
 
-for (ph in c("EXT", "EXT-RE", "REN")) {
-  for (v in analysis_vars) {
-    all_rq2_results[[paste(ph, v)]] <- run_analysis_rq2(v, ph, delta_analysis_data)
-  }
+
+for (v in analysis_vars) {
+  all_rq2_results_scr[[paste(v)]] <- run_analysis_rq2(v, "SCR_delta", delta_analysis_data)
+  all_rq2_results_ratings[[paste(v)]] <- run_analysis_rq2(v, "Rating_delta", delta_analysis_data)
 }
 
 # Combine the results list into one master dataframe
-rq2_summary_table <- bind_rows(all_rq2_results) %>%
-  # Perform FDR correction per phase (accounting for 25 tests per phase)
-  group_by(Phase) %>%
-  mutate(
-    # Use Benjamini-Hochberg (FDR) correction
-    Interaction_p_FDR = p.adjust(Interaction_p, method = "fdr"),
-    MainEffect_p_FDR = p.adjust(MainEffect_p, method = "fdr"),
-    
-    # Add significance flags
-    Significance = case_when(
-      Interaction_p < 0.05 ~ "Interaction *",
-      MainEffect_p < 0.05  ~ "Main Effect *",
-      TRUE ~ "n.s."),
-    Signifcance_FDR = case_when(
-      Interaction_p_FDR < 0.05 ~ "Interaction *",
-      MainEffect_p_FDR < 0.05 ~ "Main Effect *",
-      TRUE ~ "n.s.")
+rq2_summary_table_scr <- bind_rows(all_rq2_results_scr)
+rq2_summary_table_ratings <- bind_rows(all_rq2_results_ratings)
+
+# Display in scrollable format
+rq2_summary_table <- 
+  left_join(
+    rq2_summary_table_scr, 
+    rq2_summary_table_ratings, 
+    by = c("Variable", "Variable_name", "Variable_category")
   ) %>%
-  ungroup() %>%
-  # Clean up the numbers
   mutate(
     across(where(is.numeric), ~ round(.x, 3))
   )
 
-# Display in scrollable format
-rq2_summary_table %>% 
+rq2_summary_table %>%
   DT::datatable(options = list(pageLength = 25, scrollX = TRUE))
 
 # Save the table in output folder
-write_csv(master_data_cleaned,"../output/tables/RQ2_Linear_Models_Results.csv")
+write_csv(rq2_summary_table,"../output/tables/RQ2_Linear_Models_Results.csv")
 
 ```
 
@@ -767,31 +768,34 @@ write_csv(master_data_cleaned,"../output/tables/RQ2_Linear_Models_Results.csv")
 # Forest plot function
 # ---------------------
 
-RQ2_plots <- function(data_table, x_data, sig_flag, sig_color, title) {
+RQ2_forest_plot <- function(data_table, sig_color, title) {
   
-  p <- ggplot(data_table, aes(x = x_data, y = reorder(Variable_name, x_data))) +
-    
+  p <- ggplot(data_table, aes(x = b, y = Variable_name)) +
     geom_vline(xintercept = 0, linetype = "dotted", color = "gray50") +
     
-    geom_segment(aes(x = 0, xend = x_data, yend = Variable_name, color = sig_flag), size = 0.8) +
-    geom_point(aes(color = sig_flag), size = 2.5) +
+    # Lines and Points
+    geom_segment(aes(x = 0, xend = b, yend = Variable_name, color = is_sig), size = 0.8) +
+    geom_point(aes(color = is_sig), size = 2) +
     
-    facet_grid(Variable_category ~ Phase, scales = "free_y", space = "free_y") +
+    # 2D Faceting: Categories on Y-axis, Phase & CS Type on X-axis
+    facet_grid(Variable_category ~ Phase + CS_Type, scales = "free_y", space = "free_y") +
     
+    # Styling
     scale_color_manual(values = c("TRUE" = sig_color, "FALSE" = "gray80")) +
-    scale_alpha_manual(values = c("TRUE" = 1, "FALSE" = 0.4)) +
     theme_minimal() +
     theme(
-      strip.text.y = element_text(angle = 0, face = "bold"), # Keep category names horizontal
+      strip.text.y = element_text(angle = 0, face = "bold", size = 8),
+      strip.text.x = element_text(face = "bold", size = 9),
       strip.background = element_rect(fill = "gray95", color = NA),
       axis.text.y = element_text(size = 7),
-      panel.spacing = unit(1, "lines")
+      panel.spacing = unit(0.5, "lines"),
+      legend.position = "bottom"
     ) +
     labs(
       title = title,
-      x = "Estimate",
+      x = "Beta Coefficient",
       y = "",
-      color = "p < .05"
+      color = "Significant (p < .05)"
     )
   
   return(p)
@@ -799,20 +803,45 @@ RQ2_plots <- function(data_table, x_data, sig_flag, sig_color, title) {
 }
 
 
-# Signifcance flags for plotting
-rq2_summary_table <- rq2_summary_table %>%
-  mutate(
-    is_sig_int = (Interaction_p < 0.05),
-    is_sig_me = (MainEffect_p < 0.05)
-  )
+# Prepare plotting data for SCR
+plot_data_scr <- rq2_summary_table %>%
+  select(Variable_name, Variable_category, contains("SCR")) %>%
+  pivot_longer(
+    cols = contains("SCR"),
+    names_to = c("Phase", "CS_Type", ".value"),
+    names_pattern = "SCR_(.*)_(.*)_(.*)"
+  ) %>%
+  mutate(is_sig = p < 0.05)
 
-plot_forest_int <- RQ2_plots(rq2_summary_table, rq2_summary_table$Interaction_B, rq2_summary_table$is_sig_int, "red", "CS Type X gPPI interaction effects on SCR")
-plot_forest_me <- RQ2_plots(rq2_summary_table, rq2_summary_table$MainEffect_B, rq2_summary_table$is_sig_me, "blue", "Main effect of gPPI on SCR")
+# Prepare plotting data for Ratings
+plot_data_ratings <- rq2_summary_table %>%
+  select(Variable_name, Variable_category, contains("Rating")) %>%
+  pivot_longer(
+    cols = contains("Rating"),
+    names_to = c("Phase", "CS_Type", ".value"),
+    names_pattern = "Rating_(.*)_(.*)_(.*)"
+  ) %>%
+  mutate(is_sig = p < 0.05)
 
-# Save the forest plots
-plot_forest_int
-ggsave("../output/figures/RQ2_Forestplot_interaction.png", plot_forest_int)
-plot_forest_me
-ggsave("../output/figures/RQ2_Forestplot_maineffect.png", plot_forest_me)
+
+# Create the SCR Forest Plot
+forest_plot_scr <- RQ2_forest_plot(
+  plot_data_scr, 
+  sig_color = "firebrick", 
+  title = "Does gPPI at EXT predict SCR at EXT-RE and REN?"
+)
+
+# Create the Ratings Forest Plot
+forest_plot_ratings <- RQ2_forest_plot(
+  plot_data_ratings, 
+  sig_color = "darkblue", 
+  title = "Does gPPI at EXT predict US-Expectancy at EXT-RE and REN?"
+)
+
+print(forest_plot_scr)
+ggsave("../output/figures/RQ2_Forest_Plot_SCR.png", forest_plot_scr, width = 12, height = 10)
+print(forest_plot_ratings)
+ggsave("../output/figures/RQ2_Forest_Plot_Ratings.png", forest_plot_ratings, width = 12, height = 10)
+
 
 ```
