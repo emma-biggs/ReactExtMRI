@@ -129,7 +129,7 @@ master_data <- gppi_clean %>%
 master_data <- master_data %>%
   mutate(
     # Reorder Phase chronologically
-    Phase = fct_relevel(Phase, "ACQ", "REACT", "EXT", "EXTRE", "REN"),
+    Phase = fct_relevel(Phase, "ACQ", "REACT", "EXT", "EXT-RE", "REN"),
     
     # Reorder CS Type
     CS_Type = fct_relevel(CS_Type, "CSpR", "CSpNR", "CSm", "CSpACQ")
@@ -609,15 +609,20 @@ Does connectivity strength relate to SCR?
 
 
 SCR and gPPI responses to CS- were subtracted from responses to CS+R and CS+NR. \n
-We then tested if gPPI responses for CS+R (CS- adjusted) at EXT could predict CS+R SCR (CS- adjusted) responses at EXT-RE and REN. \n
+We then tested if gPPI responses for CS+R & CS+NR (CS- adjusted) at EXT could predict CS+R & CS+NR SCR and US-expectancy responses (CS- adjusted) at EXT-RE and REN. \n
 
 
-Conducted linear models of the form:
+Conducted linear mixed effects models of the form:
 
 `
-delta_SCR_EXT ~ delta_gPPI_extre + delta_gPPI_ren + 1
+SCR ~ gPPI_at_EXT * CS Type * Phase + (1|pID)
+
+Ratings ~ gPPI_at_EXT * CS Type * Phase + (1|pID)
 `
 
+*Phase included the levels EXT, EXT-RE and REN*
+
+*CS Type included the levels CS+R and CS+NR*
 
 ```{r analysis_rq2}
 
@@ -636,7 +641,7 @@ run_analysis_rq2 <- function(pred_name, outcome_name, data) {
   
   # Filter for the outcome phases (EXT-RE and REN)
   outcome_data <- data %>%
-    filter(Phase %in% c("EXT-RE", "REN")) %>%
+    #filter(Phase %in% c("EXT-RE", "REN")) %>%
     select(pID,
            CS_Type,
            Phase,
@@ -660,10 +665,10 @@ run_analysis_rq2 <- function(pred_name, outcome_name, data) {
   )
   
   # Slopes
-  for (p in c("EXT-RE","REN")) {
+  for (p in c("EXT", "EXT-RE","REN")) {
     for (c in c("R", "NR")) {
-      results_name_b <- paste0(outcome_name, "_", p, "_", c, "_b")
-      results_name_p <- paste0(outcome_name, "_", p, "_", c, "_p")
+      results_name_b <- paste0(str_remove(outcome_name, "_delta"), "_", p, "_CSp", c, "_b")
+      results_name_p <- paste0(str_remove(outcome_name, "_delta"), "_", p, "_CSp", c, "_p")
       results_rq2[[results_name_b]] <- slopes$gPPI_at_EXT.trend[slopes$Phase == p & slopes$CS_Type == c]
       results_rq2[[results_name_p]] <- slopes$p.value[slopes$Phase == p & slopes$CS_Type == c]
     }
@@ -828,14 +833,14 @@ plot_data_ratings <- rq2_summary_table %>%
 forest_plot_scr <- RQ2_forest_plot(
   plot_data_scr, 
   sig_color = "firebrick", 
-  title = "Does gPPI at EXT predict SCR at EXT-RE and REN?"
+  title = "Does gPPI at EXT predict SCR at EXT, EXT-RE & REN?"
 )
 
 # Create the Ratings Forest Plot
 forest_plot_ratings <- RQ2_forest_plot(
   plot_data_ratings, 
   sig_color = "darkblue", 
-  title = "Does gPPI at EXT predict US-Expectancy at EXT-RE and REN?"
+  title = "Does gPPI at EXT predict US-Expectancy at EXT, EXT-RE & REN?"
 )
 
 print(forest_plot_scr)
