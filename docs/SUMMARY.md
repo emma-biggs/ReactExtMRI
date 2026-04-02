@@ -1,6 +1,9 @@
 # Table of contents
 
 * [Executive Summary](README.md)
+* [Data Integrity & Quality Assurance](data-integrity-and-quality-assurance.md)
+* [Multi-Modal Analysis Pipeline](multi-modal-analysis-pipeline.md)
+* [Key Findings](key-findings.md)
 
 ## Experiment Manual
 
