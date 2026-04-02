@@ -1,18 +1,44 @@
-# Reactivation-Extinction MRI
+# Behavioral Memory Updating: Does reactivation prevent return-of-fear following extinction?
 **Project ID: ReactExtMRI**
+
+[![Open Science Framework](https://img.shields.io/badge/OSF-available-green)](https://osf.io/kj7nr)
+[![Open Data](https://img.shields.io/badge/Raw%20Data-On%20request-orange)](https://osf.io/kj7nr)
 
 GitHub Author: Emma Biggs
 
-## Introduction & data collection procedures
+Project Corresponding Author: Tom Beckers (tom.beckers@kuleuven.be)
 
-[To be updated]
+## Introduction
 
-- Further study details at OSF [link]
-- Raw (individual-level) data available upon request from the author
+The disruption of emotional memory reconsolidation may have clinical application in the improvement of treatments for anxiety disorders. Previous research has found that reactivating a fear memory can enhance the effect of subsequent extinction learning and thus reduce the later return-of-fear, although inconsistent findings have raised questions about the boundary conditions of this effect. It has been proposed that reactivation-extinction procedures result in an updating of a labile memory, while extinction training without reactivation results in the creation of a competing memory trace. Recent advancements in neuroimaging methods now allow the posited neural mechanisms of (reactivation-)extinction to be tested.
 
-## Data preparation
+## Data collection & preprocessing
+*Further study details at OSF [[link](https://osf.io/kj7nr)]*
 
-The data preparation pipeline includes the following steps:
+### Participants
+30 healthy adults participated
+- 1 excluded due to incomplete data collection
+- Final analysis N=29
+
+### Procedure
+2-day fear conditioning protocol
+- Day 1: Acquisition (ACQ)
+- Day 2: Reactivation (REACT), Extinction (EXT), Extinction Recall (EXT-RE), Renewal (REN)
+
+*Experiment files (PsychoPy) available in /experiment*
+
+### Measures
+MRI (3T Siemens), skin conductance, and self-reported US-expectancy were collected throughout the protocol.
+
+**Preprocessing:**
+- SCR was quantified using Ledalab decomposition, z-scored per participant based on responses during ACQ.
+- MRI data was preprocessed using fMRIprep and then a generalized psychophysiological interaction (gPPI) analysis in CONN.
+
+*Raw (individual-level) data available upon request from the author*
+
+## Analysis preparation
+
+The analysis preparation pipeline includes the following steps:
 
 - **ID Alignment:** Mapping numeric codes to participant IDs.
 - **Outlier Detection:** Automated removal of values exceeding 4 SD from the group mean, calculated per phase and CS type.
@@ -32,13 +58,13 @@ The analysis is divided into two primary research questions:
 ![Heatmap of Winning Models for RQ1](output/figures/RQ1_BAIN_heatmap.png)
 
 
-**RQ2:** *Do changes in effective connectivity relate to changes in SCR? Does this relationship differ between CS+R and CS+NR?*
+**RQ2:** *Do changes in effective connectivity relate to changes in SCR and US-expectancy?*
 
- - Method: Linear interaction models (SCR ~ CS Type * gPPI).
- - Inference: P-values and Benjamini-Hochberg FDR adjusted P-values are calculated.
+ - Method: Linear mixed effects models (SCR ~ CS Type * Phase * gPPI (1|pID)).
+ - Inference: Sattherwaite corrected p-values.
  - Visualization: Results are summarized using Forest Plots categorized by anatomical circuits.
 
-![Forestplot of Main Effects for RQ2](output/figures/RQ2_Forestplot_maineffect.png)
+![Forestplot for RQ2](output/figures/RQ2_Forest_Plot_SCR.png)
 
 
 ## The github repo:
